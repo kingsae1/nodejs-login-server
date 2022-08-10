@@ -34,11 +34,12 @@
             if (res.status === 200) {
               const data = res.json();
 
-              console.log("[result] Fetch ", data);
-              data.then(({ status }) => {
-                if (status === "EXIST") {
+              data.then((result) => {
+                console.log("[result] Fetch ", result);
+
+                if (result.data.status === "EXIST") {
                   alert("이미 존재하는 ID 입니다");
-                } else if (status === "NOT_FOUND") {
+                } else if (result.data.status === "NOT_FOUND") {
                   alert("정상적으로 회원가입이 되었습니다");
                 }
               });
