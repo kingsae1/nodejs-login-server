@@ -1,11 +1,5 @@
 const CONFIG = require("./config.json");
 const express = require("express");
-const jwt = require("jsonwebtoken");
-
-// JWT
-// JWT(JSON Web Token - JSON 웹 토큰)은 두 개체 사이에서 안전하게 클레임을 전달
-// (표현)해주는 산업 표준 RFC 7519 방법입니다. (JSON Web Tokens are an open, industry 
-// standard RFC 7519 method for representing claims securely between two parties.)
 
 const ejs = require("ejs");
 const bodyParser = require("body-parser"); // body-parser 요청
@@ -17,6 +11,10 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const uri = `mongodb+srv://${CONFIG.ID}:${CONFIG.PW}@${CONFIG.URL}`;
 const index = fs.readFileSync("./public/index.ejs", "utf8");
+const test1 = fs.readFileSync("./public/test1.ejs", "utf8");
+const test2 = fs.readFileSync("./public/test2.ejs", "utf8");
+
+const { jwt } = require("./modules/jwt");
 
 app.set("view engine", "ejs");
 app.set("views", "./public");
@@ -67,19 +65,6 @@ const signUpId = ({ id, password, email }) => {
   });
 };
 
-const generateAccessToken = (id) => {
-  return jwt.sign({ id }, CONFIG.ACCESS_TOKEN_SECRET, {
-    expiresIn: "15m",
-  });
-};
-
-// refersh token을 secret key  기반으로 생성
-const generateRefreshToken = (id) => {
-  return jwt.sign({ id }, CONFIG.REFRESH_TOKEN_SECRET, {
-    expiresIn: "180 days",
-  });
-};
-
 app.get("/", function (req, res) {
   const render = ejs.render(index, { ...req.params });
   res.writeHead(200, { "Content-Type": "text/html" });
@@ -92,9 +77,12 @@ app.get("/login", function (req, res) {
   res.json({ accessToken, refreshToken });
 });
 
-app.post("/signup", function (req, res) {
+app.get("/test", jwt.verify, function (req, res) {});
+
+app.post("/signin", function (req, result) {
   console.log("[Signup] ", req.body);
   new Promise((resolve, reject) => {
+    // ID 조회
     checkToExistId(req.body)
       .then((data) => {
         resolve({
@@ -109,6 +97,7 @@ app.post("/signup", function (req, res) {
     .then((res) => {
       return new Promise((resolve, reject) => {
         if (res.data.status === "NOT_FOUND") {
+          // 가입
           signUpId(res.data)
             .then(() => {
               resolve(res);
@@ -122,8 +111,19 @@ app.post("/signup", function (req, res) {
         }
       });
     })
-    .then((data) => {
-      res.json(data);
+    .then(async (data) => {
+      // 가입 또는 로그인
+      const token = await jwt.sign(data);
+      console.log(token);
+      // result.status(200).send({
+      //   ...data,
+      //   token: token,
+      // });
+
+      const render = ejs.render(test1, { token });
+      result.writeHead(200, { "Content-Type": "text/html" });
+      result.write(render);
+      result.end();
     });
 });
 
